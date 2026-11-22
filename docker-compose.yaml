@@ -1,0 +1,16 @@
+services:
+
+  edge:
+    build:
+      context: ./edge/
+      dockerfile: ./Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    networks:
+      - redpanda-quickstart-multi-broker_redpanda_network
+
+networks:
+  redpanda-quickstart-multi-broker_redpanda_network:
+    external: true
