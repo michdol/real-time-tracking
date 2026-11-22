@@ -11,6 +11,6 @@ RUN uv sync --frozen --no-cache
 
 EXPOSE 8000
 
-CMD ["/app/.venv/bin/fastapi", "run", "/app/src/edge/main.py", "--port", "8000", "--host", "0.0.0.0"]
+CMD ["uv", "run", "fastapi", "dev", "/app/src/edge/main.py", "--port", "8000", "--host", "0.0.0.0"]
 
 # ENTRYPOINT ["tail", "-f", "/dev/null"]

@@ -1,319 +1,494 @@
+"""Send happy-path container voyages to the Edge app.
+
+Each scenario is one container on one booking: empty pickup, gate in full,
+load, depart, arrive, discharge, gate out full, empty return. Carriers rotate
+through Maersk, Hapag-Lloyd, MSC, CMA CGM, and ONE. Events stay in DCSA Track
+and Trace shape. The request body is one event. Carrier and scenario id are headers.
+
+Settings come from event_sources/.env. Flags override those values.
+"""
+
 import argparse
-import asyncio
+import json
 import os
-import random
+import threading
 import time
+import urllib.error
+import urllib.request
 import uuid
-from datetime import datetime, timezone
-import httpx
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+ISO_EQUIPMENT_CODE = "45G1"
+SCENARIO_NAME = "happy_path_direct_voyage"
+ENV_PATH = Path(__file__).with_name(".env")
+
+_LETTER_VALUES = {
+    "A": 10,
+    "B": 12,
+    "C": 13,
+    "D": 14,
+    "E": 15,
+    "F": 16,
+    "G": 17,
+    "H": 18,
+    "I": 19,
+    "J": 20,
+    "K": 21,
+    "L": 23,
+    "M": 24,
+    "N": 25,
+    "O": 26,
+    "P": 27,
+    "Q": 28,
+    "R": 29,
+    "S": 30,
+    "T": 31,
+    "U": 32,
+    "V": 34,
+    "W": 35,
+    "X": 36,
+    "Y": 37,
+    "Z": 38,
+}
 
 
-CARRIERS = ["dhl", "maersk", "hapag-lloyd"]
+@dataclass(frozen=True)
+class Carrier:
+    slug: str
+    owner_code: str
+    booking_prefix: str
+    bl_prefix: str
+    service_code: str
+    vessel_name: str
+    vessel_imo: str
 
-DHL_STATUSES = [
-    ("transit", "Shipment in transit", "Package is moving through the DHL network."),
-    ("transit", "Arrived at sort facility", "Shipment processed at regional hub."),
-    ("delivered", "Delivered", "Delivered to recipient."),
-    (
-        "exception",
-        "Clearance event - Customs hold",
-        "Further clearance processing is required.",
+
+@dataclass(frozen=True)
+class Place:
+    unlocode: str
+    name: str
+    tz: timezone
+    terminal_code: str
+    depot_code: str
+
+
+@dataclass(frozen=True)
+class Lane:
+    origin: Place
+    destination: Place
+    transit: timedelta
+
+
+CARRIERS = (
+    Carrier("maersk", "MSKU", "MAEU", "MAEU", "AE1", "MADRID MAERSK", "9778791"),
+    Carrier("hapag-lloyd", "HLCU", "HLCU", "HLCUBC", "FE2", "BERLIN EXPRESS", "9540118"),
+    Carrier("msc", "MSCU", "MEDU", "MEDU", "LION", "MSC OSCAR", "9703291"),
+    Carrier("cma-cgm", "CMAU", "CMDU", "CMDU", "FAL1", "CMA CGM MARCO POLO", "9454436"),
+    Carrier("one", "ONEU", "ONEY", "ONEY", "FE3", "ONE CRANE", "9741401"),
+)
+
+PLUS_8 = timezone(timedelta(hours=8))
+PLUS_2 = timezone(timedelta(hours=2))
+
+LANES = (
+    Lane(
+        Place("CNSHA", "Shanghai", PLUS_8, "CNSHAYS4", "CNSHADEP"),
+        Place("NLRTM", "Rotterdam", PLUS_2, "NLRTMAPM", "NLRTMDEP"),
+        timedelta(days=32),
     ),
-]
-
-MAERSK_DELAYS = [
-    None,
-    None,
-    None,
-    ("WEA", "Vessel delayed due to adverse weather"),
-    ("CON", "Port congestion delay"),
-]
-HAPAG_EVENTS = [
-    ("GTIN", "LADEN"),
-    ("LOAD", "LADEN"),
-    ("DISC", "LADEN"),
-    ("GTOT", "EMPTY"),
-]
-PORTS = [
-    ("PLGDN", "PLGDNDCT"),
-    ("DEHAM", "DEHAMCTA"),
-    ("NLRTM", "NLRTMAPM"),
-    ("USNYC", "USNYCECT"),
-]
-CITIES = [("PL", "WROCLAW"), ("DE", "LEIPZIG"), ("NL", "ROTTERDAM"), ("FR", "PARIS")]
+    Lane(
+        Place("CNNGB", "Ningbo", PLUS_8, "CNNGBCTN", "CNNGBDEP"),
+        Place("DEHAM", "Hamburg", PLUS_2, "DEHAMCTA", "DEHAMDEP"),
+        timedelta(days=30),
+    ),
+    Lane(
+        Place("SGSIN", "Singapore", PLUS_8, "SGSINPSA", "SGSINDEP"),
+        Place("BEANR", "Antwerp", PLUS_2, "BEANRPSA", "BEANRDEP"),
+        timedelta(days=28),
+    ),
+)
 
 
-def now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def load_env(path: Path) -> None:
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip())
 
 
-def generate_dhl_payload(tracking_id: str) -> dict:
-    status_code, status, desc = random.choice(DHL_STATUSES)
-    orig_country, orig_city = random.choice(CITIES)
-    dest_country, dest_city = random.choice(CITIES)
-    ts = now_iso()
-
-    return {
-        "shipments": [
-            {
-                "id": tracking_id,
-                "service": random.choice(["express", "parcel"]),
-                "origin": {
-                    "address": {
-                        "countryCode": orig_country,
-                        "addressLocality": orig_city,
-                    }
-                },
-                "destination": {
-                    "address": {
-                        "countryCode": dest_country,
-                        "addressLocality": dest_city,
-                    }
-                },
-                "status": {
-                    "timestamp": ts,
-                    "location": {
-                        "address": {
-                            "countryCode": dest_country,
-                            "addressLocality": f"{dest_city} HUB",
-                        }
-                    },
-                    "statusCode": status_code,
-                    "status": status,
-                    "description": desc,
-                },
-                "events": [
-                    {
-                        "timestamp": ts,
-                        "location": {
-                            "address": {"addressLocality": f"{dest_city} HUB"}
-                        },
-                        "statusCode": status_code,
-                        "description": desc,
-                    }
-                ],
-            }
-        ]
-    }
-
-
-def generate_maersk_payload(container_id: str) -> dict:
-    port, facility = random.choice(PORTS)
-    delay = random.choice(MAERSK_DELAYS)
-    ts = now_iso()
-
-    payload = {
-        "eventID": str(uuid.uuid4()),
-        "eventType": "TRANSPORT",
-        "eventDateTime": ts,
-        "eventCreatedDateTime": ts,
-        "eventClassifierCode": "EST" if delay else "ACT",
-        "transportEventTypeCode": random.choice(["ARRI", "DEPA"]),
-        "transportCall": {
-            "transportCallID": f"TC-{random.randint(10000, 99999)}",
-            "carrierServiceCode": "AE10",
-            "modeOfTransport": "VESSEL",
-            "UNLocationCode": port,
-            "facilityCode": facility,
-            "vessel": {
-                "vesselIMONumber": "9778791",
-                "vesselName": random.choice(
-                    ["MADRID MAERSK", "MONACO MAERSK", "MUNICH MAERSK"]
-                ),
-            },
-        },
-        "references": [
-            {"referenceType": "EQ", "referenceValue": container_id},
-            {
-                "referenceType": "BL",
-                "referenceValue": str(random.randint(100000000, 999999999)),
-            },
-        ],
-    }
-
-    if delay:
-        payload["delayReasonCode"] = delay[0]
-        payload["changeRemark"] = delay[1]
-
-    return payload
-
-
-def generate_hapag_payload(container_id: str) -> dict:
-    port, facility = random.choice(PORTS)
-    event_code, empty_code = random.choice(HAPAG_EVENTS)
-    ts = now_iso()
-
-    return {
-        "eventID": str(uuid.uuid4()),
-        "eventType": "EQUIPMENT",
-        "eventDateTime": ts,
-        "eventCreatedDateTime": ts,
-        "eventClassifierCode": "ACT",
-        "equipmentEventTypeCode": event_code,
-        "equipmentReference": container_id,
-        "ISOEquipmentCode": "45G1",
-        "emptyIndicatorCode": empty_code,
-        "transportCall": {
-            "UNLocationCode": port,
-            "facilityCode": facility,
-            "facilityTypeCode": "POTE",
-            "modeOfTransport": "VESSEL",
-        },
-        "documentReferences": [
-            {
-                "documentReferenceType": "BKG",
-                "documentReferenceValue": str(random.randint(10000000, 99999999)),
-            }
-        ],
-    }
-
-
-def build_event(shipment_pool: list[str]) -> tuple[str, dict]:
-    carrier = random.choice(CARRIERS)
-    shipment_id = random.choice(shipment_pool)
-
-    if carrier == "dhl":
-        return carrier, generate_dhl_payload(f"0034{shipment_id}")
-    elif carrier == "maersk":
-        return carrier, generate_maersk_payload(f"MSKU{shipment_id}")
-    else:
-        return carrier, generate_hapag_payload(f"HLXU{shipment_id}")
-
-
-async def worker(
-    client: httpx.AsyncClient,
-    queue: asyncio.Queue,
-    url: str,
-    stats: dict,
-):
-    while True:
-        item = await queue.get()
-        if item is None:
-            queue.task_done()
-            break
-
-        carrier, payload = item
-        headers = {
-            "Content-Type": "application/json",
-            "X-Carrier-Source": carrier,
-        }
-
-        try:
-            resp = await client.post(url, json=payload, headers=headers)
-            if 200 <= resp.status_code < 300:
-                stats["success"] += 1
-            else:
-                stats["failed"] += 1
-        except Exception:
-            stats["failed"] += 1
-        finally:
-            queue.task_done()
-
-
-async def run_load_test(
-    url: str,
-    total_events: int,
-    concurrency: int,
-    unique_shipments: int,
-    rate_limit: float | None,
-):
-    shipment_pool = [
-        f"{random.randint(1000000, 9999999)}" for _ in range(unique_shipments)
-    ]
-    queue: asyncio.Queue = asyncio.Queue(maxsize=concurrency * 4)
-    stats = {"success": 0, "failed": 0}
-
-    limits = httpx.Limits(
-        max_keepalive_connections=concurrency, max_connections=concurrency * 2
+def container_number(owner: str, serial: str) -> str:
+    body = f"{owner}{serial}"
+    total = sum(
+        (_LETTER_VALUES[char] if char.isalpha() else int(char)) * (2**index)
+        for index, char in enumerate(body)
     )
-    timeout = httpx.Timeout(10.0, connect=5.0)
+    check = total % 11
+    if check == 10:
+        check = 0
+    return f"{body}{check}"
 
-    start_time = time.perf_counter()
 
-    async with httpx.AsyncClient(limits=limits, timeout=timeout) as client:
-        workers = [
-            asyncio.create_task(worker(client, queue, url, stats))
-            for _ in range(concurrency)
+def _event_id(scenario_id: str, name: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"rtt:{scenario_id}:{name}"))
+
+
+def _stamp(local: datetime, reported_after: timedelta) -> tuple[str, str]:
+    created = local.astimezone(timezone.utc) + reported_after
+    return (
+        local.isoformat(timespec="seconds"),
+        created.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+
+
+def _documents(booking: str, bill_of_lading: str) -> list[dict[str, str]]:
+    return [
+        {"documentReferenceType": "BKG", "documentReferenceValue": booking},
+        {"documentReferenceType": "TRD", "documentReferenceValue": bill_of_lading},
+    ]
+
+
+def _location(place: Place) -> dict[str, str]:
+    return {"UNLocationCode": place.unlocode, "locationName": place.name}
+
+
+def _transport_call(
+    call_id: str,
+    place: Place,
+    facility_code: str,
+    facility_type: str,
+    mode: str,
+    carrier: Carrier,
+    voyage: str,
+    vessel: bool,
+) -> dict:
+    call = {
+        "transportCallID": call_id,
+        "carrierServiceCode": carrier.service_code,
+        "modeOfTransport": mode,
+        "UNLocationCode": place.unlocode,
+        "facilityCode": facility_code,
+        "facilityTypeCode": facility_type,
+        "location": _location(place),
+    }
+    if vessel:
+        call["exportVoyageNumber"] = voyage
+        call["importVoyageNumber"] = voyage
+        call["vessel"] = {
+            "vesselIMONumber": carrier.vessel_imo,
+            "vesselName": carrier.vessel_name,
+        }
+    return call
+
+
+def _equipment(
+    scenario_id: str,
+    name: str,
+    happened: datetime,
+    reported_after: timedelta,
+    event_code: str,
+    empty_indicator: str,
+    container: str,
+    documents: list[dict[str, str]],
+    transport_call: dict,
+) -> dict:
+    event_time, created_time = _stamp(happened, reported_after)
+    return {
+        "eventID": _event_id(scenario_id, name),
+        "eventType": "EQUIPMENT",
+        "eventClassifierCode": "ACT",
+        "eventDateTime": event_time,
+        "eventCreatedDateTime": created_time,
+        "equipmentEventTypeCode": event_code,
+        "equipmentReference": container,
+        "ISOEquipmentCode": ISO_EQUIPMENT_CODE,
+        "emptyIndicatorCode": empty_indicator,
+        "eventLocation": transport_call["location"],
+        "transportCall": transport_call,
+        "documentReferences": documents,
+    }
+
+
+def _transport(
+    scenario_id: str,
+    name: str,
+    happened: datetime,
+    reported_after: timedelta,
+    event_code: str,
+    container: str,
+    documents: list[dict[str, str]],
+    transport_call: dict,
+) -> dict:
+    event_time, created_time = _stamp(happened, reported_after)
+    return {
+        "eventID": _event_id(scenario_id, name),
+        "eventType": "TRANSPORT",
+        "eventClassifierCode": "ACT",
+        "eventDateTime": event_time,
+        "eventCreatedDateTime": created_time,
+        "transportEventTypeCode": event_code,
+        "equipmentReference": container,
+        "eventLocation": transport_call["location"],
+        "transportCall": transport_call,
+        "documentReferences": documents,
+    }
+
+
+def happy_path(index: int) -> dict:
+    carrier = CARRIERS[index % len(CARRIERS)]
+    lane = LANES[index % len(LANES)]
+    scenario_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"rtt:{SCENARIO_NAME}:{index}"))
+    number = index + 1
+    serial = f"{number % 1_000_000:06d}"
+    container = container_number(carrier.owner_code, serial)
+    booking = f"{carrier.booking_prefix}{number:08d}"
+    bill_of_lading = f"{carrier.bl_prefix}{number:09d}"
+    voyage = f"{600 + (index % 50)}W"
+    documents = _documents(booking, bill_of_lading)
+    call = f"tc-{index}"
+
+    origin_depot = _transport_call(
+        f"{call}-origin-depot",
+        lane.origin,
+        lane.origin.depot_code,
+        "DEPO",
+        "TRUCK",
+        carrier,
+        voyage,
+        vessel=False,
+    )
+    origin_terminal = _transport_call(
+        f"{call}-origin-terminal",
+        lane.origin,
+        lane.origin.terminal_code,
+        "POTE",
+        "TRUCK",
+        carrier,
+        voyage,
+        vessel=False,
+    )
+    origin_vessel = _transport_call(
+        f"{call}-origin-vessel",
+        lane.origin,
+        lane.origin.terminal_code,
+        "POTE",
+        "VESSEL",
+        carrier,
+        voyage,
+        vessel=True,
+    )
+    destination_vessel = _transport_call(
+        f"{call}-destination-vessel",
+        lane.destination,
+        lane.destination.terminal_code,
+        "POTE",
+        "VESSEL",
+        carrier,
+        voyage,
+        vessel=True,
+    )
+    destination_terminal = _transport_call(
+        f"{call}-destination-terminal",
+        lane.destination,
+        lane.destination.terminal_code,
+        "POTE",
+        "TRUCK",
+        carrier,
+        voyage,
+        vessel=False,
+    )
+    destination_depot = _transport_call(
+        f"{call}-destination-depot",
+        lane.destination,
+        lane.destination.depot_code,
+        "DEPO",
+        "TRUCK",
+        carrier,
+        voyage,
+        vessel=False,
+    )
+
+    pickup = datetime(2026, 4, 2, 9, 0, tzinfo=lane.origin.tz) + timedelta(days=index % 45)
+    gate_in = pickup + timedelta(days=2, hours=6)
+    loaded = pickup + timedelta(days=4)
+    departed = pickup + timedelta(days=4, hours=10)
+    arrived = (departed + lane.transit).astimezone(lane.destination.tz)
+    discharged = arrived + timedelta(hours=8)
+    gate_out = arrived + timedelta(days=2)
+    empty_return = arrived + timedelta(days=6)
+
+    events = [
+        _equipment(scenario_id, "empty-pickup", pickup, timedelta(minutes=20), "GTOT", "EMPTY", container, documents, origin_depot),
+        _equipment(scenario_id, "gate-in-full", gate_in, timedelta(minutes=30), "GTIN", "LADEN", container, documents, origin_terminal),
+        _equipment(scenario_id, "loaded", loaded, timedelta(minutes=25), "LOAD", "LADEN", container, documents, origin_vessel),
+        _transport(scenario_id, "departed-origin", departed, timedelta(minutes=30), "DEPA", container, documents, origin_vessel),
+        _transport(scenario_id, "arrived-destination", arrived, timedelta(minutes=40), "ARRI", container, documents, destination_vessel),
+        _equipment(scenario_id, "discharged", discharged, timedelta(minutes=35), "DISC", "LADEN", container, documents, destination_vessel),
+        _equipment(scenario_id, "gate-out-full", gate_out, timedelta(minutes=25), "GTOT", "LADEN", container, documents, destination_terminal),
+        _equipment(scenario_id, "empty-returned", empty_return, timedelta(minutes=45), "GTIN", "EMPTY", container, documents, destination_depot),
+    ]
+    return {
+        "scenario": SCENARIO_NAME,
+        "scenarioId": scenario_id,
+        "carrier": carrier.slug,
+        "container": container,
+        "booking": booking,
+        "events": events,
+    }
+
+
+class RateLimiter:
+    def __init__(self, per_second: float) -> None:
+        self.interval = 1.0 / per_second if per_second > 0 else 0.0
+        self._lock = threading.Lock()
+        self._next_at = 0.0
+
+    def wait(self) -> None:
+        if self.interval <= 0:
+            return
+        with self._lock:
+            now = time.perf_counter()
+            slot = max(now, self._next_at)
+            self._next_at = slot + self.interval
+            delay = slot - now
+        if delay > 0:
+            time.sleep(delay)
+
+
+def post_event(url: str, scenario: dict, event: dict, limiter: RateLimiter) -> tuple[bool, str]:
+    limiter.wait()
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(event).encode(),
+        headers={
+            "Content-Type": "application/json",
+            "X-Carrier": scenario["carrier"],
+            "X-Scenario": scenario["scenario"],
+            "X-Scenario-Id": scenario["scenarioId"],
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            ok = 200 <= response.status < 300
+            return ok, "" if ok else f"HTTP {response.status}"
+    except urllib.error.HTTPError as exc:
+        return False, f"HTTP {exc.code}"
+    except urllib.error.URLError as exc:
+        return False, str(exc.reason)
+
+
+def send_scenario(url: str, scenario: dict, limiter: RateLimiter) -> tuple[int, int, str]:
+    success = 0
+    failed = 0
+    sample_error = ""
+    for event in scenario["events"]:
+        ok, error = post_event(url, scenario, event, limiter)
+        if ok:
+            success += 1
+        else:
+            failed += 1
+            if not sample_error:
+                sample_error = error
+    return success, failed, sample_error
+
+
+def run_load(url: str, count: int, concurrency: int, rate: float) -> None:
+    limiter = RateLimiter(rate)
+    stats = {"success": 0, "failed": 0, "scenarios": 0}
+    sample_error = ""
+    lock = threading.Lock()
+    started = time.perf_counter()
+    report_every = max(1, count // 10)
+
+    print(
+        f"Sending {count} scenarios ({count * 8} events) to {url} "
+        f"with concurrency {concurrency}"
+    )
+
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        futures = [
+            pool.submit(send_scenario, url, happy_path(index), limiter)
+            for index in range(count)
         ]
-
-        interval = (1.0 / rate_limit) if rate_limit and rate_limit > 0 else 0.0
-
-        for i in range(total_events):
-            await queue.put(build_event(shipment_pool))
-            if interval > 0:
-                await asyncio.sleep(interval)
-
-            if (i + 1) % max(1, total_events // 10) == 0:
-                elapsed = time.perf_counter() - start_time
-                eps = (stats["success"] + stats["failed"]) / elapsed
+        for future in as_completed(futures):
+            success, failed, error = future.result()
+            with lock:
+                stats["success"] += success
+                stats["failed"] += failed
+                stats["scenarios"] += 1
+                if error and not sample_error:
+                    sample_error = error
+                done = stats["scenarios"]
+            if done % report_every == 0 or done == count:
+                elapsed = time.perf_counter() - started
+                sent = stats["success"] + stats["failed"]
+                pace = sent / elapsed if elapsed else 0
                 print(
-                    f"Progress: {i + 1}/{total_events} queued | "
-                    f"OK: {stats['success']} | Err: {stats['failed']} | "
-                    f"Rate: {eps:.1f} req/s"
+                    f"Scenarios {done}/{count} | "
+                    f"OK {stats['success']} | Err {stats['failed']} | "
+                    f"{pace:.1f} events/s"
                 )
 
-        for _ in range(concurrency):
-            await queue.put(None)
-
-        await queue.join()
-        await asyncio.gather(*workers)
-
-    total_time = time.perf_counter() - start_time
-    throughput = total_events / total_time if total_time > 0 else 0
-
-    print("\n--- Load Generation Complete ---")
-    print(f"Target URL:     {url}")
-    print(f"Total Events:   {total_events}")
-    print(f"Succeeded:      {stats['success']}")
-    print(f"Failed:         {stats['failed']}")
-    print(f"Elapsed Time:   {total_time:.2f}s")
-    print(f"Avg Throughput: {throughput:.1f} events/sec")
+    elapsed = time.perf_counter() - started
+    print(f"Finished in {elapsed:.2f}s")
+    if sample_error:
+        print(f"Sample error: {sample_error}")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="High-volume carrier event generator for FastAPI."
-    )
+def main() -> None:
+    load_env(ENV_PATH)
+    parser = argparse.ArgumentParser(description="Send happy-path voyages to Edge.")
     parser.add_argument(
         "--url",
-        default=os.getenv("INGEST_URL", "http://localhost:8000/webhooks/carrier"),
-        help="FastAPI ingestion endpoint URL (env: INGEST_URL)",
+        default=os.getenv("INGEST_URL", "http://localhost:8000/event"),
+        help="Edge ingestion URL (env: INGEST_URL)",
     )
     parser.add_argument(
-        "--events",
+        "--scenarios",
         type=int,
-        default=int(os.getenv("TOTAL_EVENTS", "10000")),
-        help="Total number of events to send (env: TOTAL_EVENTS)",
+        default=int(os.getenv("SCENARIOS", "100")),
+        help="Number of voyages to send (env: SCENARIOS)",
     )
     parser.add_argument(
         "--concurrency",
         type=int,
-        default=int(os.getenv("CONCURRENCY", "50")),
-        help="Number of concurrent async HTTP workers (env: CONCURRENCY)",
-    )
-    parser.add_argument(
-        "--shipments",
-        type=int,
-        default=int(os.getenv("UNIQUE_SHIPMENTS", "500")),
-        help="Pool size of unique shipment IDs to simulate multi-event histories (env: UNIQUE_SHIPMENTS)",
+        default=int(os.getenv("CONCURRENCY", "10")),
+        help="Voyages in flight at once (env: CONCURRENCY)",
     )
     parser.add_argument(
         "--rate",
         type=float,
-        default=float(os.getenv("RATE_LIMIT", "0")) or None,
-        help="Optional max events per second; 0 = unlimited burst (env: RATE_LIMIT)",
+        default=float(os.getenv("RATE_LIMIT", "0")),
+        help="Max events per second. 0 is unlimited (env: RATE_LIMIT)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the first voyage and send nothing",
     )
     args = parser.parse_args()
 
-    asyncio.run(
-        run_load_test(
-            url=args.url,
-            total_events=args.events,
-            concurrency=args.concurrency,
-            unique_shipments=args.shipments,
-            rate_limit=args.rate,
+    if args.scenarios < 1:
+        raise SystemExit("scenarios must be at least 1")
+    if args.concurrency < 1:
+        raise SystemExit("concurrency must be at least 1")
+
+    if args.dry_run:
+        print(json.dumps(happy_path(0), indent=2))
+        print(
+            f"\nDry run: {args.scenarios} scenarios, {args.scenarios * 8} events, "
+            f"nothing sent to {args.url}"
         )
-    )
+        return
+
+    run_load(args.url, args.scenarios, args.concurrency, args.rate)
 
 
 if __name__ == "__main__":

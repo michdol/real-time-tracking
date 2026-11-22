@@ -10,6 +10,8 @@ services:
       - "8000:8000"
     networks:
       - redpanda-quickstart-multi-broker_redpanda_network
+    volumes:
+      - ./edge:/app
 
 networks:
   redpanda-quickstart-multi-broker_redpanda_network:
