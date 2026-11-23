@@ -6,6 +6,7 @@ class KafkaSettings(BaseSettings):
     bootstrap_servers: str
     sasl_username: str
     sasl_password: str
+    raw_events_topic: str
 
     model_config = SettingsConfigDict(env_prefix="kafka_")
 

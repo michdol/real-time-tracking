@@ -33,6 +33,8 @@ async def events(
     """
     Send events to Kafka immediately.
     """
-    await request.app.producer.produce("mytopic", value=await request.body())
+    await request.app.producer.produce(
+        settings.kafka.raw_events_topic, value=await request.body()
+    )
     await request.app.producer.flush()
     return {"status": "queued"}
