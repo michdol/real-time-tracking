@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "michdol", email = "michal.dolbniak@gmail.com" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "confluent-kafka>=2.16.2",
     "fastapi[standard]>=0.165.0",
