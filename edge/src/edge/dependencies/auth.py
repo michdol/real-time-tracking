@@ -11,6 +11,8 @@ async def verify_signature(request: Request):
     """
     Verifies the payload's signature with header's value.
     """
+    if settings.app.skip_auth:
+        return
     signature: str = request.headers.get("Content-Digest", "")
 
     if not signature:

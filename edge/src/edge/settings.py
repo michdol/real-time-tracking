@@ -22,8 +22,13 @@ class KafkaSettings(BaseSettings):
         return config
 
 
+class AppSettings(BaseSettings):
+    skip_auth: bool = False
+
+
 class Settings(BaseSettings):
     signing_secret: SecretStr
+    app: AppSettings = Field(default_factory=lambda: AppSettings())  # type: ignore[call-arg]
     kafka: KafkaSettings = Field(default_factory=lambda: KafkaSettings())  # type: ignore[call-arg]
 
     model_config = SettingsConfigDict(
