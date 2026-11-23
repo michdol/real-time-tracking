@@ -11,7 +11,7 @@ services:
     networks:
       - redpanda-quickstart-multi-broker_redpanda_network
     volumes:
-      - ./src:/edge
+      - ./edge:/edge
 
 networks:
   redpanda-quickstart-multi-broker_redpanda_network:

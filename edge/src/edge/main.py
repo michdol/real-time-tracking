@@ -5,16 +5,15 @@ from confluent_kafka.aio import AIOProducer
 from edge.settings import settings
 
 
-producers = {}
-
-
-# FIXME: slow as hell endpoint
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    producer = AIOProducer(settings.kafka.producer_config)
+    setattr(app, "producer", producer)
+    yield
     try:
-        producer = AIOProducer(settings.kafka.producer_config)
-        producers[1] = producer
-        yield
+        await producer.flush()
+    except Exception:
+        pass
     finally:
         await producer.close()
 
@@ -29,6 +28,9 @@ async def ping():
 
 @app.post("/event")
 async def events(request: Request) -> dict:
-    future = await producers[1].produce("mytopic", value=await request.body())
-    delivered_msg = await future
+    """
+    Send events to Kafka immediately.
+    """
+    await request.app.producer.produce("mytopic", value=await request.body())
+    await request.app.producer.flush()
     return {"status": "queued"}
