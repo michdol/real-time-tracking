@@ -1,8 +1,10 @@
+from typing import Annotated
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from confluent_kafka.aio import AIOProducer
 
 from edge.settings import settings
+from edge.dependencies.auth import verify_signature
 
 
 @asynccontextmanager
@@ -12,8 +14,6 @@ async def lifespan(app: FastAPI):
     yield
     try:
         await producer.flush()
-    except Exception:
-        pass
     finally:
         await producer.close()
 
@@ -27,7 +27,9 @@ async def ping():
 
 
 @app.post("/event")
-async def events(request: Request) -> dict:
+async def events(
+    _: Annotated[None, Depends(verify_signature)], request: Request
+) -> dict:
     """
     Send events to Kafka immediately.
     """

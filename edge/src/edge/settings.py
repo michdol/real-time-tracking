@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +22,7 @@ class KafkaSettings(BaseSettings):
 
 
 class Settings(BaseSettings):
+    signing_secret: SecretStr
     kafka: KafkaSettings = Field(default_factory=lambda: KafkaSettings())  # type: ignore[call-arg]
 
     model_config = SettingsConfigDict(

@@ -9,6 +9,8 @@ Settings come from event_sources/.env. Flags override those values.
 """
 
 import argparse
+import hashlib
+import hmac
 import json
 import os
 import threading
@@ -84,7 +86,9 @@ class Lane:
 
 CARRIERS = (
     Carrier("maersk", "MSKU", "MAEU", "MAEU", "AE1", "MADRID MAERSK", "9778791"),
-    Carrier("hapag-lloyd", "HLCU", "HLCU", "HLCUBC", "FE2", "BERLIN EXPRESS", "9540118"),
+    Carrier(
+        "hapag-lloyd", "HLCU", "HLCU", "HLCUBC", "FE2", "BERLIN EXPRESS", "9540118"
+    ),
     Carrier("msc", "MSCU", "MEDU", "MEDU", "LION", "MSC OSCAR", "9703291"),
     Carrier("cma-cgm", "CMAU", "CMDU", "CMDU", "FAL1", "CMA CGM MARCO POLO", "9454436"),
     Carrier("one", "ONEU", "ONEY", "ONEY", "FE3", "ONE CRANE", "9741401"),
@@ -314,7 +318,9 @@ def happy_path(index: int) -> dict:
         vessel=False,
     )
 
-    pickup = datetime(2026, 4, 2, 9, 0, tzinfo=lane.origin.tz) + timedelta(days=index % 45)
+    pickup = datetime(2026, 4, 2, 9, 0, tzinfo=lane.origin.tz) + timedelta(
+        days=index % 45
+    )
     gate_in = pickup + timedelta(days=2, hours=6)
     loaded = pickup + timedelta(days=4)
     departed = pickup + timedelta(days=4, hours=10)
@@ -324,14 +330,92 @@ def happy_path(index: int) -> dict:
     empty_return = arrived + timedelta(days=6)
 
     events = [
-        _equipment(scenario_id, "empty-pickup", pickup, timedelta(minutes=20), "GTOT", "EMPTY", container, documents, origin_depot),
-        _equipment(scenario_id, "gate-in-full", gate_in, timedelta(minutes=30), "GTIN", "LADEN", container, documents, origin_terminal),
-        _equipment(scenario_id, "loaded", loaded, timedelta(minutes=25), "LOAD", "LADEN", container, documents, origin_vessel),
-        _transport(scenario_id, "departed-origin", departed, timedelta(minutes=30), "DEPA", container, documents, origin_vessel),
-        _transport(scenario_id, "arrived-destination", arrived, timedelta(minutes=40), "ARRI", container, documents, destination_vessel),
-        _equipment(scenario_id, "discharged", discharged, timedelta(minutes=35), "DISC", "LADEN", container, documents, destination_vessel),
-        _equipment(scenario_id, "gate-out-full", gate_out, timedelta(minutes=25), "GTOT", "LADEN", container, documents, destination_terminal),
-        _equipment(scenario_id, "empty-returned", empty_return, timedelta(minutes=45), "GTIN", "EMPTY", container, documents, destination_depot),
+        _equipment(
+            scenario_id,
+            "empty-pickup",
+            pickup,
+            timedelta(minutes=20),
+            "GTOT",
+            "EMPTY",
+            container,
+            documents,
+            origin_depot,
+        ),
+        _equipment(
+            scenario_id,
+            "gate-in-full",
+            gate_in,
+            timedelta(minutes=30),
+            "GTIN",
+            "LADEN",
+            container,
+            documents,
+            origin_terminal,
+        ),
+        _equipment(
+            scenario_id,
+            "loaded",
+            loaded,
+            timedelta(minutes=25),
+            "LOAD",
+            "LADEN",
+            container,
+            documents,
+            origin_vessel,
+        ),
+        _transport(
+            scenario_id,
+            "departed-origin",
+            departed,
+            timedelta(minutes=30),
+            "DEPA",
+            container,
+            documents,
+            origin_vessel,
+        ),
+        _transport(
+            scenario_id,
+            "arrived-destination",
+            arrived,
+            timedelta(minutes=40),
+            "ARRI",
+            container,
+            documents,
+            destination_vessel,
+        ),
+        _equipment(
+            scenario_id,
+            "discharged",
+            discharged,
+            timedelta(minutes=35),
+            "DISC",
+            "LADEN",
+            container,
+            documents,
+            destination_vessel,
+        ),
+        _equipment(
+            scenario_id,
+            "gate-out-full",
+            gate_out,
+            timedelta(minutes=25),
+            "GTOT",
+            "LADEN",
+            container,
+            documents,
+            destination_terminal,
+        ),
+        _equipment(
+            scenario_id,
+            "empty-returned",
+            empty_return,
+            timedelta(minutes=45),
+            "GTIN",
+            "EMPTY",
+            container,
+            documents,
+            destination_depot,
+        ),
     ]
     return {
         "scenario": SCENARIO_NAME,
@@ -361,16 +445,35 @@ class RateLimiter:
             time.sleep(delay)
 
 
-def post_event(url: str, scenario: dict, event: dict, limiter: RateLimiter) -> tuple[bool, str]:
+def event_body(event: dict) -> bytes:
+    return json.dumps(event).encode()
+
+
+def sign_body(body: bytes, secret: str) -> str:
+    digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    return f"sha-256={digest}"
+
+
+def post_event(
+    url: str,
+    scenario: dict,
+    event: dict,
+    limiter: RateLimiter,
+    secret: str,
+    invalid: bool,
+) -> tuple[bool, str]:
     limiter.wait()
+    body = event_body(event)
+    signature = "invalid signature" if invalid else sign_body(body, secret)
     request = urllib.request.Request(
         url,
-        data=json.dumps(event).encode(),
+        data=body,
         headers={
             "Content-Type": "application/json",
             "X-Carrier": scenario["carrier"],
             "X-Scenario": scenario["scenario"],
             "X-Scenario-Id": scenario["scenarioId"],
+            "Content-Digest": signature,
         },
         method="POST",
     )
@@ -384,12 +487,21 @@ def post_event(url: str, scenario: dict, event: dict, limiter: RateLimiter) -> t
         return False, str(exc.reason)
 
 
-def send_scenario(url: str, scenario: dict, limiter: RateLimiter) -> tuple[int, int, str]:
+def send_scenario(
+    url: str,
+    scenario: dict,
+    limiter: RateLimiter,
+    secret: str,
+    invalid_every: int,
+    scenario_index: int,
+) -> tuple[int, int, str]:
     success = 0
     failed = 0
     sample_error = ""
-    for event in scenario["events"]:
-        ok, error = post_event(url, scenario, event, limiter)
+    for event_index, event in enumerate(scenario["events"]):
+        sequence = scenario_index * 8 + event_index
+        invalid = invalid_every > 0 and sequence % invalid_every == 0
+        ok, error = post_event(url, scenario, event, limiter, secret, invalid)
         if ok:
             success += 1
         else:
@@ -399,7 +511,14 @@ def send_scenario(url: str, scenario: dict, limiter: RateLimiter) -> tuple[int, 
     return success, failed, sample_error
 
 
-def run_load(url: str, count: int, concurrency: int, rate: float) -> None:
+def run_load(
+    url: str,
+    count: int,
+    concurrency: int,
+    rate: float,
+    secret: str,
+    invalid_every: int,
+) -> None:
     limiter = RateLimiter(rate)
     stats = {"success": 0, "failed": 0, "scenarios": 0}
     sample_error = ""
@@ -414,7 +533,15 @@ def run_load(url: str, count: int, concurrency: int, rate: float) -> None:
 
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
         futures = [
-            pool.submit(send_scenario, url, happy_path(index), limiter)
+            pool.submit(
+                send_scenario,
+                url,
+                happy_path(index),
+                limiter,
+                secret,
+                invalid_every,
+                index,
+            )
             for index in range(count)
         ]
         for future in as_completed(futures):
@@ -469,6 +596,17 @@ def main() -> None:
         help="Max events per second. 0 is unlimited (env: RATE_LIMIT)",
     )
     parser.add_argument(
+        "--secret",
+        default=os.getenv("SIGNING_SECRET", ""),
+        help="Shared HMAC secret (env: SIGNING_SECRET)",
+    )
+    parser.add_argument(
+        "--invalid-every",
+        type=int,
+        default=int(os.getenv("INVALID_SIGNATURE_EVERY", "0")),
+        help="Send X-Signature: invalid signature on every Nth event. 0 disables it",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print the first voyage and send nothing",
@@ -479,16 +617,30 @@ def main() -> None:
         raise SystemExit("scenarios must be at least 1")
     if args.concurrency < 1:
         raise SystemExit("concurrency must be at least 1")
+    if not args.secret:
+        raise SystemExit("SIGNING_SECRET is required")
+    if args.invalid_every < 0:
+        raise SystemExit("invalid-every must be 0 or greater")
 
     if args.dry_run:
-        print(json.dumps(happy_path(0), indent=2))
+        scenario = happy_path(0)
+        body = event_body(scenario["events"][0])
+        print(json.dumps(scenario, indent=2))
+        print(f"\nX-Signature: {sign_body(body, args.secret)}")
         print(
-            f"\nDry run: {args.scenarios} scenarios, {args.scenarios * 8} events, "
+            f"Dry run: {args.scenarios} scenarios, {args.scenarios * 8} events, "
             f"nothing sent to {args.url}"
         )
         return
 
-    run_load(args.url, args.scenarios, args.concurrency, args.rate)
+    run_load(
+        args.url,
+        args.scenarios,
+        args.concurrency,
+        args.rate,
+        args.secret,
+        args.invalid_every,
+    )
 
 
 if __name__ == "__main__":
