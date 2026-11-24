@@ -17,3 +17,12 @@ networks:
 To find network name run:
 
 `docker inspect redpanda-0 --format '{{range $net, $v := .NetworkSettings.Networks}}{{$net}} {{end}}'`
+
+
+# Tools
+
+## Terraform
+
+`https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli`
+
+
