@@ -13,6 +13,21 @@ services:
     volumes:
       - ./edge:/edge
 
+  keda-bootstrap:
+    build:
+      context: ./normalizer/keda-consumer/bootstrap
+    entrypoint: ["bash", "/start.sh"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/work:ro
+      - ./normalizer/keda-consumer/bootstrap/start.sh:/start.sh:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      K3D_CLUSTER: rtt
+      KEDA_VERSION: "2.16.1"
+    restart: unless-stopped
+
 networks:
   redpanda-quickstart-multi-broker_redpanda_network:
     external: true
