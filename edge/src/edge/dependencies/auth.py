@@ -12,29 +12,6 @@ from edge.database.db import Database
 from edge.dependencies.database import get_db
 
 
-async def verify_signature(request: Request):
-    """
-    Verifies the payload's signature with header's value.
-    """
-    if settings.app.skip_auth:
-        return
-    signature: str = request.headers.get("Content-Digest", "")
-
-    if not signature:
-        raise UnauthorizedException()
-    try:
-        signature = signature[8:]
-    except IndexError:
-        raise UnauthorizedException(detail="Invalid signature format")
-    digest = hmac.new(
-        settings.signing_secret.get_secret_value().encode(),
-        await request.body(),
-        hashlib.sha256,
-    ).hexdigest()
-    if digest != signature:
-        raise UnauthorizedException(detail="Invalid signature")
-
-
 def verify_api_key(
     database: Annotated[Database, Depends(get_db)],
     credentials: HTTPAuthorizationCredentials = Security(HTTPBearer()),
@@ -46,8 +23,11 @@ def verify_api_key(
     - None otherwise
     """
     try:
-        _, key_id, provided_secret = credentials.credentials.split("_")
+        prefix, key_id, provided_secret = credentials.credentials.split("_")
     except ValueError:
+        return None
+
+    if prefix != "rtt":
         return None
 
     try:

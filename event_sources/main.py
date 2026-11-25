@@ -9,8 +9,6 @@ Settings come from event_sources/.env. Flags override those values.
 """
 
 import argparse
-import hashlib
-import hmac
 import json
 import os
 import threading
@@ -449,22 +447,17 @@ def event_body(event: dict) -> bytes:
     return json.dumps(event).encode()
 
 
-def sign_body(body: bytes, secret: str) -> str:
-    digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-    return f"sha-256={digest}"
-
-
 def post_event(
     url: str,
     scenario: dict,
     event: dict,
     limiter: RateLimiter,
-    secret: str,
+    api_key: str,
     invalid: bool,
 ) -> tuple[bool, str]:
     limiter.wait()
     body = event_body(event)
-    signature = "invalid signature" if invalid else sign_body(body, secret)
+    token = "invalid" if invalid else api_key
     request = urllib.request.Request(
         url,
         data=body,
@@ -473,7 +466,7 @@ def post_event(
             "X-Carrier": scenario["carrier"],
             "X-Scenario": scenario["scenario"],
             "X-Scenario-Id": scenario["scenarioId"],
-            "Content-Digest": signature,
+            "Authorization": f"Bearer {token}",
         },
         method="POST",
     )
@@ -491,7 +484,7 @@ def send_scenario(
     url: str,
     scenario: dict,
     limiter: RateLimiter,
-    secret: str,
+    api_key: str,
     invalid_every: int,
     scenario_index: int,
 ) -> tuple[int, int, str]:
@@ -501,7 +494,7 @@ def send_scenario(
     for event_index, event in enumerate(scenario["events"]):
         sequence = scenario_index * 8 + event_index
         invalid = invalid_every > 0 and sequence % invalid_every == 0
-        ok, error = post_event(url, scenario, event, limiter, secret, invalid)
+        ok, error = post_event(url, scenario, event, limiter, api_key, invalid)
         if ok:
             success += 1
         else:
@@ -516,7 +509,7 @@ def run_load(
     count: int,
     concurrency: int,
     rate: float,
-    secret: str,
+    api_key: str,
     invalid_every: int,
 ) -> None:
     limiter = RateLimiter(rate)
@@ -538,7 +531,7 @@ def run_load(
                 url,
                 happy_path(index),
                 limiter,
-                secret,
+                api_key,
                 invalid_every,
                 index,
             )
@@ -596,15 +589,15 @@ def main() -> None:
         help="Max events per second. 0 is unlimited (env: RATE_LIMIT)",
     )
     parser.add_argument(
-        "--secret",
-        default=os.getenv("SIGNING_SECRET", ""),
-        help="Shared HMAC secret (env: SIGNING_SECRET)",
+        "--api-key",
+        default=os.getenv("API_KEY", ""),
+        help="Provider API key sent as Authorization: Bearer (env: API_KEY)",
     )
     parser.add_argument(
         "--invalid-every",
         type=int,
-        default=int(os.getenv("INVALID_SIGNATURE_EVERY", "0")),
-        help="Send X-Signature: invalid signature on every Nth event. 0 disables it",
+        default=int(os.getenv("INVALID_API_KEY_EVERY", "0")),
+        help="Send Authorization: Bearer invalid on every Nth event. 0 disables it",
     )
     parser.add_argument(
         "--dry-run",
@@ -617,16 +610,15 @@ def main() -> None:
         raise SystemExit("scenarios must be at least 1")
     if args.concurrency < 1:
         raise SystemExit("concurrency must be at least 1")
-    if not args.secret:
-        raise SystemExit("SIGNING_SECRET is required")
+    if not args.api_key:
+        raise SystemExit("API_KEY is required")
     if args.invalid_every < 0:
         raise SystemExit("invalid-every must be 0 or greater")
 
     if args.dry_run:
         scenario = happy_path(0)
-        body = event_body(scenario["events"][0])
         print(json.dumps(scenario, indent=2))
-        print(f"\nX-Signature: {sign_body(body, args.secret)}")
+        print(f"\nAuthorization: Bearer {args.api_key}")
         print(
             f"Dry run: {args.scenarios} scenarios, {args.scenarios * 8} events, "
             f"nothing sent to {args.url}"
@@ -638,56 +630,10 @@ def main() -> None:
         args.scenarios,
         args.concurrency,
         args.rate,
-        args.secret,
+        args.api_key,
         args.invalid_every,
     )
 
 
 if __name__ == "__main__":
     main()
-
-
-import hashlib
-import hmac
-import secrets
-
-
-def generate_api_key(prefix: str = "ev_live") -> tuple[str, str, str]:
-    """Generates a new API key.
-
-    Returns: (full_key_to_give_provider, key_id_for_db, secret_hash_for_db)
-    """
-    key_id = secrets.token_hex(4)  # 8-char public lookup ID
-    secret = secrets.token_urlsafe(32)  # High-entropy secret
-    full_key = f"{prefix}_{key_id}_{secret}"
-
-    secret_hash = hash_secret(secret)
-    return full_key, key_id, secret_hash
-
-
-def hash_secret(secret: str) -> str:
-    return hashlib.sha256(secret.encode("utf-8")).hexdigest()
-
-
-def verify_api_key(raw_key: str, db_lookup_fn) -> str | None:
-    """Validates the raw key and returns the provider_id if valid."""
-    parts = raw_key.split("_")
-    # Expecting format: prefix_env_keyid_secret (e.g., ev_live_a1b2c3d4_xyz...)
-    if len(parts) != 4:
-        return None
-
-    _, _, key_id, provided_secret = parts
-
-    # 1. Fetch record by public key_id (fast indexed DB lookup)
-    record = db_lookup_fn(key_id)
-    if not record or not record.get("is_active"):
-        return None
-
-    # 2. Constant-time comparison to prevent timing attacks
-    expected_hash = record["secret_hash"]
-    provided_hash = hash_secret(provided_secret)
-
-    if hmac.compare_digest(expected_hash, provided_hash):
-        return record["provider_id"]
-
-    return None
