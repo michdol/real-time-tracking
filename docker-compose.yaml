@@ -1,5 +1,13 @@
 services:
 
+  keda-consumer:
+    image: keda-consumer:local
+    build:
+      context: .
+      dockerfile: normalizer/keda-consumer/Dockerfile
+    command: ["true"]
+    restart: "no"
+
   edge:
     build:
       context: ./edge/
@@ -17,6 +25,9 @@ services:
     build:
       context: ./normalizer/keda-consumer/bootstrap
     entrypoint: ["bash", "/start.sh"]
+    depends_on:
+      keda-consumer:
+        condition: service_completed_successfully
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/work:ro

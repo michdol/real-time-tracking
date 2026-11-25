@@ -1,6 +1,6 @@
 """One booking, from confirmation to the empty box back at the depot.
 
-Run from this directory: python3 order_to_arrival.py
+Run from this directory: uv run python order_to_arrival.py
 
 EVENTS is the DCSA shape a normalizer should emit.
 NON_DCSA_EVENTS is the same journey in a made-up portal shape.
@@ -11,7 +11,7 @@ Same index in each list is the same moment.
 import json
 from enum import Enum
 
-from enums import (
+from dcsa_codes import (
     CargoMovementType,
     DocumentType,
     EmptyIndicator,

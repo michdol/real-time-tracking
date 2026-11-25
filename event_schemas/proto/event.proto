@@ -1,0 +1,187 @@
+syntax = "proto3";
+
+package dcsa.tracking.v1;
+
+enum EventClassifier {
+  EVENT_CLASSIFIER_UNSPECIFIED = 0;
+  EVENT_CLASSIFIER_ACT = 1;
+  EVENT_CLASSIFIER_PLN = 2;
+  EVENT_CLASSIFIER_EST = 3;
+  EVENT_CLASSIFIER_REQ = 4;
+}
+
+enum ShipmentEventType {
+  SHIPMENT_EVENT_TYPE_UNSPECIFIED = 0;
+  SHIPMENT_EVENT_TYPE_RECE = 1;
+  SHIPMENT_EVENT_TYPE_DRFT = 2;
+  SHIPMENT_EVENT_TYPE_PENA = 3;
+  SHIPMENT_EVENT_TYPE_PENU = 4;
+  SHIPMENT_EVENT_TYPE_PENC = 5;
+  SHIPMENT_EVENT_TYPE_REJE = 6;
+  SHIPMENT_EVENT_TYPE_APPR = 7;
+  SHIPMENT_EVENT_TYPE_ISSU = 8;
+  SHIPMENT_EVENT_TYPE_SURR = 9;
+  SHIPMENT_EVENT_TYPE_SUBM = 10;
+  SHIPMENT_EVENT_TYPE_VOID = 11;
+  SHIPMENT_EVENT_TYPE_CONF = 12;
+  SHIPMENT_EVENT_TYPE_REQS = 13;
+  SHIPMENT_EVENT_TYPE_CMPL = 14;
+  SHIPMENT_EVENT_TYPE_HOLD = 15;
+  SHIPMENT_EVENT_TYPE_RELS = 16;
+  SHIPMENT_EVENT_TYPE_CANC = 17;
+}
+
+enum DocumentType {
+  DOCUMENT_TYPE_UNSPECIFIED = 0;
+  DOCUMENT_TYPE_CBR = 1;
+  DOCUMENT_TYPE_BKG = 2;
+  DOCUMENT_TYPE_SHI = 3;
+  DOCUMENT_TYPE_TRD = 4;
+  DOCUMENT_TYPE_DEI = 5;
+  DOCUMENT_TYPE_DEO = 6;
+  DOCUMENT_TYPE_TRO = 7;
+  DOCUMENT_TYPE_CRO = 8;
+  DOCUMENT_TYPE_ARN = 9;
+  DOCUMENT_TYPE_VGM = 10;
+  DOCUMENT_TYPE_CAS = 11;
+  DOCUMENT_TYPE_CUC = 12;
+  DOCUMENT_TYPE_DGD = 13;
+  DOCUMENT_TYPE_OOG = 14;
+  DOCUMENT_TYPE_CQU = 15;
+  DOCUMENT_TYPE_INV = 16;
+}
+
+enum CargoMovementType {
+  CARGO_MOVEMENT_TYPE_UNSPECIFIED = 0;
+  CARGO_MOVEMENT_TYPE_FCL = 1;
+  CARGO_MOVEMENT_TYPE_LCL = 2;
+  CARGO_MOVEMENT_TYPE_BB = 3;
+}
+
+enum ReceiptDeliveryType {
+  RECEIPT_DELIVERY_TYPE_UNSPECIFIED = 0;
+  RECEIPT_DELIVERY_TYPE_CY = 1;
+  RECEIPT_DELIVERY_TYPE_SD = 2;
+  RECEIPT_DELIVERY_TYPE_CFS = 3;
+}
+
+enum ShipmentLocationType {
+  SHIPMENT_LOCATION_TYPE_UNSPECIFIED = 0;
+  SHIPMENT_LOCATION_TYPE_PRE = 1;
+  SHIPMENT_LOCATION_TYPE_POL = 2;
+  SHIPMENT_LOCATION_TYPE_POD = 3;
+  SHIPMENT_LOCATION_TYPE_PDE = 4;
+  SHIPMENT_LOCATION_TYPE_PCF = 5;
+  SHIPMENT_LOCATION_TYPE_PSR = 6;
+  SHIPMENT_LOCATION_TYPE_OIR = 7;
+  SHIPMENT_LOCATION_TYPE_DRL = 8;
+  SHIPMENT_LOCATION_TYPE_ORI = 9;
+  SHIPMENT_LOCATION_TYPE_IEL = 10;
+  SHIPMENT_LOCATION_TYPE_PTP = 11;
+  SHIPMENT_LOCATION_TYPE_RTP = 12;
+  SHIPMENT_LOCATION_TYPE_FCD = 13;
+  SHIPMENT_LOCATION_TYPE_ECP = 14;
+}
+
+enum EquipmentEventType {
+  EQUIPMENT_EVENT_TYPE_UNSPECIFIED = 0;
+  EQUIPMENT_EVENT_TYPE_LOAD = 1;
+  EQUIPMENT_EVENT_TYPE_DISC = 2;
+  EQUIPMENT_EVENT_TYPE_GTIN = 3;
+  EQUIPMENT_EVENT_TYPE_GTOT = 4;
+  EQUIPMENT_EVENT_TYPE_STUF = 5;
+  EQUIPMENT_EVENT_TYPE_STRP = 6;
+  EQUIPMENT_EVENT_TYPE_PICK = 7;
+  EQUIPMENT_EVENT_TYPE_DROP = 8;
+  EQUIPMENT_EVENT_TYPE_INSP = 9;
+  EQUIPMENT_EVENT_TYPE_RSEA = 10;
+  EQUIPMENT_EVENT_TYPE_RMVD = 11;
+  EQUIPMENT_EVENT_TYPE_AVPU = 12;
+  EQUIPMENT_EVENT_TYPE_AVDO = 13;
+  EQUIPMENT_EVENT_TYPE_CUSS = 14;
+  EQUIPMENT_EVENT_TYPE_CUSI = 15;
+  EQUIPMENT_EVENT_TYPE_CUSR = 16;
+  EQUIPMENT_EVENT_TYPE_WAYP = 17;
+}
+
+enum EmptyIndicator {
+  EMPTY_INDICATOR_UNSPECIFIED = 0;
+  EMPTY_INDICATOR_EMPTY = 1;
+  EMPTY_INDICATOR_LADEN = 2;
+}
+
+enum TransportEventType {
+  TRANSPORT_EVENT_TYPE_UNSPECIFIED = 0;
+  TRANSPORT_EVENT_TYPE_ARRI = 1;
+  TRANSPORT_EVENT_TYPE_DEPA = 2;
+}
+
+enum ModeOfTransport {
+  MODE_OF_TRANSPORT_UNSPECIFIED = 0;
+  MODE_OF_TRANSPORT_VESSEL = 1;
+  MODE_OF_TRANSPORT_RAIL = 2;
+  MODE_OF_TRANSPORT_TRUCK = 3;
+  MODE_OF_TRANSPORT_BARGE = 4;
+}
+
+enum FacilityType {
+  FACILITY_TYPE_UNSPECIFIED = 0;
+  FACILITY_TYPE_BOCR = 1;
+  FACILITY_TYPE_CLOC = 2;
+  FACILITY_TYPE_COFS = 3;
+  FACILITY_TYPE_OFFD = 4;
+  FACILITY_TYPE_DEPO = 5;
+  FACILITY_TYPE_INTE = 6;
+  FACILITY_TYPE_POTE = 7;
+  FACILITY_TYPE_PBPL = 8;
+  FACILITY_TYPE_BRTH = 9;
+  FACILITY_TYPE_RAMP = 10;
+  FACILITY_TYPE_ANCH = 11;
+}
+
+message ShipmentLocation {
+  ShipmentLocationType location_type = 1;
+  string un_location_code = 2;
+}
+
+message DocumentReference {
+  DocumentType document_type = 1;
+  string document_value = 2;
+}
+
+message ShipmentEvent {
+  EventClassifier event_classifier = 1;
+  ShipmentEventType shipment_event_type = 2;
+  DocumentType document_type = 3;
+  optional string document_id = 4;
+  optional CargoMovementType cargo_movement = 5;
+  optional ReceiptDeliveryType receipt_delivery = 6;
+  repeated ShipmentLocation shipment_locations = 7;
+  repeated DocumentReference document_references = 8;
+}
+
+message EquipmentEvent {
+  EventClassifier event_classifier = 1;
+  EquipmentEventType equipment_event_type = 2;
+  EmptyIndicator empty_indicator = 3;
+  string equipment_reference = 4;
+  TransportCall transport_call = 5;
+  repeated DocumentReference document_references = 6;
+}
+
+message TransportEvent {
+  EventClassifier event_classifier = 1;
+  TransportEventType transport_event_type = 2;
+  string equipment_reference = 3;
+  TransportCall transport_call = 4;
+  repeated DocumentReference document_references = 5;
+}
+
+message TransportCall {
+  ModeOfTransport mode_of_transport = 1;
+  FacilityType facility_type = 2;
+  string un_location_code = 3;
+  optional string vessel_name = 4;
+  optional string export_voyage_number = 5;
+  optional string import_voyage_number = 6;
+}

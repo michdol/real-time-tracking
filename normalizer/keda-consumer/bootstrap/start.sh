@@ -9,8 +9,10 @@ if [[ ! -f /work/normalizer/keda-consumer/Dockerfile ]]; then
   exit 1
 fi
 
-echo "building keda-consumer:local"
-tar -C /work/normalizer/keda-consumer -cf - . | docker build -t keda-consumer:local -
+if ! docker image inspect keda-consumer:local >/dev/null 2>&1; then
+  echo "keda-consumer:local is missing; run docker compose build keda-consumer" >&2
+  exit 1
+fi
 
 if ! k3d cluster list | awk 'NR>1 {print $1}' | grep -qx "${CLUSTER}"; then
   echo "creating k3d cluster ${CLUSTER}"

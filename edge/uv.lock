@@ -227,6 +227,11 @@ wheels = [
 ]
 
 [[package]]
+name = "dcsa-codes"
+version = "0.1.0"
+source = { editable = "../dcsa_codes" }
+
+[[package]]
 name = "detect-installer"
 version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -250,6 +255,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "confluent-kafka" },
+    { name = "dcsa-codes" },
     { name = "fastapi", extra = ["standard"] },
     { name = "pydantic-settings" },
 ]
@@ -257,6 +263,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "confluent-kafka", specifier = ">=2.16.2" },
+    { name = "dcsa-codes", editable = "../dcsa_codes" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.165.0" },
     { name = "pydantic-settings", specifier = ">=2.16.3" },
 ]

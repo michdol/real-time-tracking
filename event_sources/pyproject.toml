@@ -1,0 +1,12 @@
+[project]
+name = "event-sources"
+version = "0.1.0"
+description = "Scripts that post and print tracking events"
+requires-python = ">=3.13"
+dependencies = ["dcsa-codes"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+dcsa-codes = { path = "../dcsa_codes", editable = true }

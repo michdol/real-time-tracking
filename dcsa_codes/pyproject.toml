@@ -1,0 +1,10 @@
+[project]
+name = "dcsa-codes"
+version = "0.1.0"
+description = "DCSA Track and Trace code lists"
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.13.9,<0.14.0"]
+build-backend = "uv_build"
