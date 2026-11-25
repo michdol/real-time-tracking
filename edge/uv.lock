@@ -256,6 +256,7 @@ source = { editable = "." }
 dependencies = [
     { name = "confluent-kafka" },
     { name = "dcsa-codes" },
+    { name = "event-schemas" },
     { name = "fastapi", extra = ["standard"] },
     { name = "pydantic-settings" },
 ]
@@ -264,6 +265,7 @@ dependencies = [
 requires-dist = [
     { name = "confluent-kafka", specifier = ">=2.16.2" },
     { name = "dcsa-codes", editable = "../dcsa_codes" },
+    { name = "event-schemas", editable = "../event_schemas" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.165.0" },
     { name = "pydantic-settings", specifier = ">=2.16.3" },
 ]
@@ -280,6 +282,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/c0/4d/f5e9d9de19f4b8f9e
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b8/8b/99e715c59560afa0bf68f21ed16eec794d94293945f57934b70c5255d741/email_validator-2.4.0-py3-none-any.whl", hash = "sha256:4454e41c4e1c6b6caee34a1dc71d5e736791562be8fd179b02e298f796522684", size = 36810, upload-time = "2026-11-14T20:21:27.14Z" },
 ]
+
+[[package]]
+name = "event-schemas"
+version = "0.1.0"
+source = { editable = "../event_schemas" }
+dependencies = [
+    { name = "protobuf" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "protobuf", specifier = ">=7.36" }]
 
 [[package]]
 name = "fastapi"
