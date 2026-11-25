@@ -645,3 +645,49 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+import hashlib
+import hmac
+import secrets
+
+
+def generate_api_key(prefix: str = "ev_live") -> tuple[str, str, str]:
+    """Generates a new API key.
+
+    Returns: (full_key_to_give_provider, key_id_for_db, secret_hash_for_db)
+    """
+    key_id = secrets.token_hex(4)  # 8-char public lookup ID
+    secret = secrets.token_urlsafe(32)  # High-entropy secret
+    full_key = f"{prefix}_{key_id}_{secret}"
+
+    secret_hash = hash_secret(secret)
+    return full_key, key_id, secret_hash
+
+
+def hash_secret(secret: str) -> str:
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()
+
+
+def verify_api_key(raw_key: str, db_lookup_fn) -> str | None:
+    """Validates the raw key and returns the provider_id if valid."""
+    parts = raw_key.split("_")
+    # Expecting format: prefix_env_keyid_secret (e.g., ev_live_a1b2c3d4_xyz...)
+    if len(parts) != 4:
+        return None
+
+    _, _, key_id, provided_secret = parts
+
+    # 1. Fetch record by public key_id (fast indexed DB lookup)
+    record = db_lookup_fn(key_id)
+    if not record or not record.get("is_active"):
+        return None
+
+    # 2. Constant-time comparison to prevent timing attacks
+    expected_hash = record["secret_hash"]
+    provided_hash = hash_secret(provided_secret)
+
+    if hmac.compare_digest(expected_hash, provided_hash):
+        return record["provider_id"]
+
+    return None

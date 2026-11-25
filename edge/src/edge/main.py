@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request, Depends
 from confluent_kafka.aio import AIOProducer
 
 from edge.settings import settings
-from edge.dependencies.auth import verify_signature
+from edge.dependencies.auth import get_current_provider
 
 
 @asynccontextmanager
@@ -28,13 +28,15 @@ async def ping():
 
 @app.post("/event")
 async def events(
-    _: Annotated[None, Depends(verify_signature)], request: Request
+    provider_id: Annotated[str, Depends(get_current_provider)], request: Request
 ) -> dict:
     """
     Send events to Kafka immediately.
     """
     await request.app.producer.produce(
-        settings.kafka.raw_events_topic, value=await request.body()
+        settings.kafka.raw_events_topic,
+        value=await request.body(),
+        headers=[("provider", provider_id.encode("utf-8"))],
     )
     await request.app.producer.flush()
     return {"status": "queued"}
