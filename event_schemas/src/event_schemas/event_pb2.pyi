@@ -1,3 +1,6 @@
+import datetime
+
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -143,6 +146,20 @@ class FacilityType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     FACILITY_TYPE_BRTH: _ClassVar[FacilityType]
     FACILITY_TYPE_RAMP: _ClassVar[FacilityType]
     FACILITY_TYPE_ANCH: _ClassVar[FacilityType]
+
+class ReferenceType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    REFERENCE_TYPE_UNSPECIFIED: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_FF: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_SI: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_PO: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_CR: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_AAO: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_ECR: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_CSI: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_BPR: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_BID: _ClassVar[ReferenceType]
+    REFERENCE_TYPE_EQ: _ClassVar[ReferenceType]
 EVENT_CLASSIFIER_UNSPECIFIED: EventClassifier
 EVENT_CLASSIFIER_ACT: EventClassifier
 EVENT_CLASSIFIER_PLN: EventClassifier
@@ -247,6 +264,43 @@ FACILITY_TYPE_PBPL: FacilityType
 FACILITY_TYPE_BRTH: FacilityType
 FACILITY_TYPE_RAMP: FacilityType
 FACILITY_TYPE_ANCH: FacilityType
+REFERENCE_TYPE_UNSPECIFIED: ReferenceType
+REFERENCE_TYPE_FF: ReferenceType
+REFERENCE_TYPE_SI: ReferenceType
+REFERENCE_TYPE_PO: ReferenceType
+REFERENCE_TYPE_CR: ReferenceType
+REFERENCE_TYPE_AAO: ReferenceType
+REFERENCE_TYPE_ECR: ReferenceType
+REFERENCE_TYPE_CSI: ReferenceType
+REFERENCE_TYPE_BPR: ReferenceType
+REFERENCE_TYPE_BID: ReferenceType
+REFERENCE_TYPE_EQ: ReferenceType
+
+class EventEnvelope(_message.Message):
+    __slots__ = ("event_id", "event_date_time", "event_created_date_time", "retracted_event_id", "shipment_event", "equipment_event", "transport_event")
+    EVENT_ID_FIELD_NUMBER: _ClassVar[int]
+    EVENT_DATE_TIME_FIELD_NUMBER: _ClassVar[int]
+    EVENT_CREATED_DATE_TIME_FIELD_NUMBER: _ClassVar[int]
+    RETRACTED_EVENT_ID_FIELD_NUMBER: _ClassVar[int]
+    SHIPMENT_EVENT_FIELD_NUMBER: _ClassVar[int]
+    EQUIPMENT_EVENT_FIELD_NUMBER: _ClassVar[int]
+    TRANSPORT_EVENT_FIELD_NUMBER: _ClassVar[int]
+    event_id: str
+    event_date_time: _timestamp_pb2.Timestamp
+    event_created_date_time: _timestamp_pb2.Timestamp
+    retracted_event_id: str
+    shipment_event: ShipmentEvent
+    equipment_event: EquipmentEvent
+    transport_event: TransportEvent
+    def __init__(self, event_id: _Optional[str] = ..., event_date_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., event_created_date_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., retracted_event_id: _Optional[str] = ..., shipment_event: _Optional[_Union[ShipmentEvent, _Mapping]] = ..., equipment_event: _Optional[_Union[EquipmentEvent, _Mapping]] = ..., transport_event: _Optional[_Union[TransportEvent, _Mapping]] = ...) -> None: ...
+
+class Reference(_message.Message):
+    __slots__ = ("reference_type", "reference_value")
+    REFERENCE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    REFERENCE_VALUE_FIELD_NUMBER: _ClassVar[int]
+    reference_type: ReferenceType
+    reference_value: str
+    def __init__(self, reference_type: _Optional[_Union[ReferenceType, str]] = ..., reference_value: _Optional[str] = ...) -> None: ...
 
 class ShipmentLocation(_message.Message):
     __slots__ = ("location_type", "un_location_code")
@@ -265,7 +319,7 @@ class DocumentReference(_message.Message):
     def __init__(self, document_type: _Optional[_Union[DocumentType, str]] = ..., document_value: _Optional[str] = ...) -> None: ...
 
 class ShipmentEvent(_message.Message):
-    __slots__ = ("event_classifier", "shipment_event_type", "document_type", "document_id", "cargo_movement", "receipt_delivery", "shipment_locations", "document_references")
+    __slots__ = ("event_classifier", "shipment_event_type", "document_type", "document_id", "cargo_movement", "receipt_delivery", "shipment_locations", "document_references", "references")
     EVENT_CLASSIFIER_FIELD_NUMBER: _ClassVar[int]
     SHIPMENT_EVENT_TYPE_FIELD_NUMBER: _ClassVar[int]
     DOCUMENT_TYPE_FIELD_NUMBER: _ClassVar[int]
@@ -274,6 +328,7 @@ class ShipmentEvent(_message.Message):
     RECEIPT_DELIVERY_FIELD_NUMBER: _ClassVar[int]
     SHIPMENT_LOCATIONS_FIELD_NUMBER: _ClassVar[int]
     DOCUMENT_REFERENCES_FIELD_NUMBER: _ClassVar[int]
+    REFERENCES_FIELD_NUMBER: _ClassVar[int]
     event_classifier: EventClassifier
     shipment_event_type: ShipmentEventType
     document_type: DocumentType
@@ -282,7 +337,8 @@ class ShipmentEvent(_message.Message):
     receipt_delivery: ReceiptDeliveryType
     shipment_locations: _containers.RepeatedCompositeFieldContainer[ShipmentLocation]
     document_references: _containers.RepeatedCompositeFieldContainer[DocumentReference]
-    def __init__(self, event_classifier: _Optional[_Union[EventClassifier, str]] = ..., shipment_event_type: _Optional[_Union[ShipmentEventType, str]] = ..., document_type: _Optional[_Union[DocumentType, str]] = ..., document_id: _Optional[str] = ..., cargo_movement: _Optional[_Union[CargoMovementType, str]] = ..., receipt_delivery: _Optional[_Union[ReceiptDeliveryType, str]] = ..., shipment_locations: _Optional[_Iterable[_Union[ShipmentLocation, _Mapping]]] = ..., document_references: _Optional[_Iterable[_Union[DocumentReference, _Mapping]]] = ...) -> None: ...
+    references: _containers.RepeatedCompositeFieldContainer[Reference]
+    def __init__(self, event_classifier: _Optional[_Union[EventClassifier, str]] = ..., shipment_event_type: _Optional[_Union[ShipmentEventType, str]] = ..., document_type: _Optional[_Union[DocumentType, str]] = ..., document_id: _Optional[str] = ..., cargo_movement: _Optional[_Union[CargoMovementType, str]] = ..., receipt_delivery: _Optional[_Union[ReceiptDeliveryType, str]] = ..., shipment_locations: _Optional[_Iterable[_Union[ShipmentLocation, _Mapping]]] = ..., document_references: _Optional[_Iterable[_Union[DocumentReference, _Mapping]]] = ..., references: _Optional[_Iterable[_Union[Reference, _Mapping]]] = ...) -> None: ...
 
 class EquipmentEvent(_message.Message):
     __slots__ = ("event_classifier", "equipment_event_type", "empty_indicator", "equipment_reference", "transport_call", "document_references")

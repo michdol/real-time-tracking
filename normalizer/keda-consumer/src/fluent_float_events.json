@@ -1,0 +1,608 @@
+{
+  "objectTypes": [{
+    "name": "Customer Order",
+    "attributes": [{
+      "name": "Amount of Goods",
+      "type": "integer"
+    }]
+  }, {
+    "name": "Transport Document",
+    "attributes": [{
+      "name": "Amount of Containers",
+      "type": "float"
+    }, {
+      "name": "Status",
+      "type": "string"
+    }]
+  }, {
+    "name": "Container",
+    "attributes": [{
+      "name": "Amount of Handling Units",
+      "type": "float"
+    }, {
+      "name": "Status",
+      "type": "string"
+    }, {
+      "name": "Weight",
+      "type": "float"
+    }]
+  }, {
+    "name": "Truck",
+    "attributes": []
+  }, {
+    "name": "Handling Unit",
+    "attributes": []
+  }, {
+    "name": "Forklift",
+    "attributes": []
+  }, {
+    "name": "Vehicle",
+    "attributes": [{
+      "name": "Departure Date",
+      "type": "string"
+    }]
+  }],
+  "eventTypes": [{
+    "name": "Register Customer Order",
+    "attributes": []
+  }, {
+    "name": "Create Transport Document",
+    "attributes": []
+  }, {
+    "name": "Book Vehicles",
+    "attributes": []
+  }, {
+    "name": "Order Empty Containers",
+    "attributes": []
+  }, {
+    "name": "Pick Up Empty Container",
+    "attributes": []
+  }, {
+    "name": "Collect Goods",
+    "attributes": []
+  }, {
+    "name": "Load Truck",
+    "attributes": []
+  }, {
+    "name": "Drive to Terminal",
+    "attributes": []
+  }, {
+    "name": "Weigh",
+    "attributes": []
+  }, {
+    "name": "Place in Stock",
+    "attributes": []
+  }, {
+    "name": "Bring to Loading Bay",
+    "attributes": []
+  }, {
+    "name": "Load to Vehicle",
+    "attributes": []
+  }, {
+    "name": "Reschedule Container",
+    "attributes": []
+  }, {
+    "name": "Depart",
+    "attributes": []
+  }, {
+    "name": "Arrive at Destination",
+    "attributes": []
+  }, {
+    "name": "Unload from Vehicle",
+    "attributes": []
+  }, {
+    "name": "Customs Release",
+    "attributes": []
+  }, {
+    "name": "Depart Terminal for Delivery",
+    "attributes": []
+  }, {
+    "name": "Unload Goods",
+    "attributes": []
+  }, {
+    "name": "Return Empty Container",
+    "attributes": []
+  }, {
+    "name": "Close Customer Order",
+    "attributes": []
+  }],
+  "objects": [{
+    "id": "co2",
+    "type": "Customer Order",
+    "attributes": [{
+      "name": "Amount of Goods",
+      "value": 1300,
+      "time": "2023-05-22T18:33:30.000Z"
+    }],
+    "relationships": [{
+      "objectId": "td1",
+      "qualifier": "TD for CO"
+    }]
+  }, {
+    "id": "td1",
+    "type": "Transport Document",
+    "attributes": [{
+      "name": "Amount of Containers",
+      "value": 5,
+      "time": "2023-05-23T08:22:17.000Z"
+    }, {
+      "name": "Status",
+      "value": null,
+      "time": "2023-05-23T08:22:17.000Z"
+    }, {
+      "name": "Status",
+      "value": "in transit",
+      "time": "2023-05-30T08:58:48.000Z"
+    }, {
+      "name": "Status",
+      "value": "shipped",
+      "time": "2023-06-09T09:00:00.000Z"
+    }, {
+      "name": "Status",
+      "value": "completed",
+      "time": "2023-06-16T17:00:00.000Z"
+    }],
+    "relationships": [{
+      "objectId": "vh1",
+      "qualifier": "High-Prio VH for TD"
+    }, {
+      "objectId": "vh4",
+      "qualifier": "Regular VH for TD"
+    }]
+  }, {
+    "id": "cr1",
+    "type": "Container",
+    "attributes": [{
+      "name": "Amount of Handling Units",
+      "value": 6,
+      "time": "2023-05-29T17:21:01.000Z"
+    }, {
+      "name": "Status",
+      "value": "empty",
+      "time": "2023-05-29T17:21:01.000Z"
+    }],
+    "relationships": [{
+      "objectId": "td1",
+      "qualifier": "CR for TD"
+    }]
+  }, {
+    "id": "cr2",
+    "type": "Container",
+    "attributes": [{
+      "name": "Amount of Handling Units",
+      "value": 6,
+      "time": "2023-05-24T19:02:38.000Z"
+    }, {
+      "name": "Status",
+      "value": "empty",
+      "time": "2023-05-24T19:02:38.000Z"
+    }, {
+      "name": "Weight",
+      "value": null,
+      "time": "2023-05-24T19:02:38.000Z"
+    }, {
+      "name": "Status",
+      "value": "full",
+      "time": "2023-05-25T08:00:26.000Z"
+    }, {
+      "name": "Weight",
+      "value": 1210,
+      "time": "2023-05-25T08:41:35.000Z"
+    }, {
+      "name": "Status",
+      "value": "empty",
+      "time": "2023-06-16T10:05:00.000Z"
+    }, {
+      "name": "Weight",
+      "value": 0,
+      "time": "2023-06-16T10:05:00.000Z"
+    }],
+    "relationships": [{
+      "objectId": "hu1",
+      "qualifier": "CR contains HU"
+    }, {
+      "objectId": "hu2",
+      "qualifier": "CR contains HU"
+    }, {
+      "objectId": "hu3",
+      "qualifier": "CR contains HU"
+    }, {
+      "objectId": "hu4",
+      "qualifier": "CR contains HU"
+    }, {
+      "objectId": "hu5",
+      "qualifier": "CR contains HU"
+    }, {
+      "objectId": "hu6",
+      "qualifier": "CR contains HU"
+    }, {
+      "objectId": "td1",
+      "qualifier": "CR for TD"
+    }]
+  }, {
+    "id": "cr3",
+    "type": "Container",
+    "attributes": [{
+      "name": "Amount of Handling Units",
+      "value": 6,
+      "time": "2023-05-25T00:23:40.000Z"
+    }, {
+      "name": "Status",
+      "value": "full",
+      "time": "2023-05-25T07:49:01.000Z"
+    }],
+    "relationships": [{
+      "objectId": "td1",
+      "qualifier": "CR for TD"
+    }]
+  }, {
+    "id": "cr4",
+    "type": "Container",
+    "attributes": [{
+      "name": "Amount of Handling Units",
+      "value": 6,
+      "time": "2023-05-27T16:23:23.000Z"
+    }, {
+      "name": "Status",
+      "value": "empty",
+      "time": "2023-05-27T16:23:23.000Z"
+    }],
+    "relationships": [{
+      "objectId": "td1",
+      "qualifier": "CR for TD"
+    }]
+  }, {
+    "id": "cr5",
+    "type": "Container",
+    "attributes": [{
+      "name": "Amount of Handling Units",
+      "value": 2,
+      "time": "2023-05-29T13:43:58.000Z"
+    }, {
+      "name": "Status",
+      "value": "empty",
+      "time": "2023-05-29T13:43:58.000Z"
+    }],
+    "relationships": [{
+      "objectId": "td1",
+      "qualifier": "CR for TD"
+    }]
+  }, {
+    "id": "hu1",
+    "type": "Handling Unit",
+    "attributes": [],
+    "relationships": []
+  }, {
+    "id": "hu2",
+    "type": "Handling Unit",
+    "attributes": [],
+    "relationships": []
+  }, {
+    "id": "hu3",
+    "type": "Handling Unit",
+    "attributes": [],
+    "relationships": []
+  }, {
+    "id": "hu4",
+    "type": "Handling Unit",
+    "attributes": [],
+    "relationships": []
+  }, {
+    "id": "hu5",
+    "type": "Handling Unit",
+    "attributes": [],
+    "relationships": []
+  }, {
+    "id": "hu6",
+    "type": "Handling Unit",
+    "attributes": [],
+    "relationships": []
+  }, {
+    "id": "vh1",
+    "type": "Vehicle",
+    "attributes": [{
+      "name": "Departure Date",
+      "value": "2023-05-30T09:00:00.000Z",
+      "time": "2023-05-23T10:05:16.000Z"
+    }],
+    "relationships": []
+  }, {
+    "id": "vh4",
+    "type": "Vehicle",
+    "attributes": [{
+      "name": "Departure Date",
+      "value": "2023-06-09T09:00:00.000Z",
+      "time": "2023-05-23T10:05:16.000Z"
+    }],
+    "relationships": []
+  }, {
+    "id": "tr1",
+    "type": "Truck",
+    "attributes": [],
+    "relationships": []
+  }, {
+    "id": "tr2",
+    "type": "Truck",
+    "attributes": [],
+    "relationships": []
+  }, {
+    "id": "fl1",
+    "type": "Forklift",
+    "attributes": [],
+    "relationships": []
+  }],
+  "events": [{
+    "type": "Register Customer Order",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "co2",
+      "qualifier": "registered CO"
+    }],
+    "id": "reg_co2",
+    "time": "2023-05-22T18:33:30.000Z"
+  }, {
+    "type": "Create Transport Document",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "co2",
+      "qualifier": "TD created for CO"
+    }, {
+      "objectId": "td1",
+      "qualifier": "created TD"
+    }],
+    "id": "create_td1",
+    "time": "2023-05-23T08:22:17.000Z"
+  }, {
+    "type": "Book Vehicles",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "td1",
+      "qualifier": "VHs booked for TD"
+    }, {
+      "objectId": "vh1",
+      "qualifier": "booked VHs"
+    }, {
+      "objectId": "vh4",
+      "qualifier": "booked VHs"
+    }],
+    "id": "book_vehs_td1",
+    "time": "2023-05-23T10:05:16.000Z"
+  }, {
+    "type": "Order Empty Containers",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr1",
+      "qualifier": "CRs ordered"
+    }, {
+      "objectId": "cr2",
+      "qualifier": "CRs ordered"
+    }, {
+      "objectId": "cr3",
+      "qualifier": "CRs ordered"
+    }, {
+      "objectId": "cr4",
+      "qualifier": "CRs ordered"
+    }, {
+      "objectId": "cr5",
+      "qualifier": "CRs ordered"
+    }, {
+      "objectId": "td1",
+      "qualifier": "ordered for TD"
+    }],
+    "id": "order_crs_td1",
+    "time": "2023-05-23T13:22:08.000Z"
+  }, {
+    "type": "Pick Up Empty Container",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR picked"
+    }, {
+      "objectId": "tr1",
+      "qualifier": "TR picking CR"
+    }],
+    "id": "pick_cr2",
+    "time": "2023-05-24T19:02:38.000Z"
+  }, {
+    "type": "Collect Goods",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR loaded with HU"
+    }, {
+      "objectId": "hu1",
+      "qualifier": "HU collected"
+    }, {
+      "objectId": "hu2",
+      "qualifier": "HU collected"
+    }, {
+      "objectId": "hu3",
+      "qualifier": "HU collected"
+    }, {
+      "objectId": "hu4",
+      "qualifier": "HU collected"
+    }, {
+      "objectId": "hu5",
+      "qualifier": "HU collected"
+    }, {
+      "objectId": "hu6",
+      "qualifier": "HU collected"
+    }],
+    "id": "collect_cr2",
+    "time": "2023-05-25T08:00:26.000Z"
+  }, {
+    "type": "Drive to Terminal",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR driven to terminal"
+    }, {
+      "objectId": "tr1",
+      "qualifier": "TR driving CR"
+    }],
+    "id": "drive_cr2",
+    "time": "2023-05-25T08:30:00.000Z"
+  }, {
+    "type": "Weigh",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR weighed"
+    }],
+    "id": "weigh_cr2",
+    "time": "2023-05-25T08:41:35.000Z"
+  }, {
+    "type": "Place in Stock",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR placed in stock"
+    }, {
+      "objectId": "fl1",
+      "qualifier": "FL moving CR"
+    }],
+    "id": "stock_cr2",
+    "time": "2023-05-25T09:05:12.000Z"
+  }, {
+    "type": "Bring to Loading Bay",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR brought to bay"
+    }, {
+      "objectId": "fl1",
+      "qualifier": "FL moving CR"
+    }],
+    "id": "bay_cr2",
+    "time": "2023-05-30T08:15:00.000Z"
+  }, {
+    "type": "Load to Vehicle",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR loaded to VH"
+    }, {
+      "objectId": "vh1",
+      "qualifier": "VH loaded with CR"
+    }],
+    "id": "load_cr2_vh1",
+    "time": "2023-05-30T08:45:00.000Z"
+  }, {
+    "type": "Depart",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR departed"
+    }, {
+      "objectId": "cr3",
+      "qualifier": "CR departed"
+    }, {
+      "objectId": "td1",
+      "qualifier": "TD with CR departure"
+    }, {
+      "objectId": "vh1",
+      "qualifier": "VH departed"
+    }],
+    "id": "depart_vh1",
+    "time": "2023-05-30T09:00:00.000Z"
+  }, {
+    "type": "Arrive at Destination",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "vh1",
+      "qualifier": "VH arrived"
+    }, {
+      "objectId": "td1",
+      "qualifier": "TD on arrived VH"
+    }],
+    "id": "arrive_vh1",
+    "time": "2023-06-14T06:30:00.000Z"
+  }, {
+    "type": "Unload from Vehicle",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR unloaded from VH"
+    }, {
+      "objectId": "vh1",
+      "qualifier": "VH unloaded CR"
+    }],
+    "id": "unload_cr2_vh1",
+    "time": "2023-06-14T11:15:00.000Z"
+  }, {
+    "type": "Customs Release",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "td1",
+      "qualifier": "TD customs cleared"
+    }, {
+      "objectId": "cr2",
+      "qualifier": "CR customs cleared"
+    }],
+    "id": "customs_td1_cr2",
+    "time": "2023-06-15T09:40:00.000Z"
+  }, {
+    "type": "Depart Terminal for Delivery",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR gate-out full"
+    }, {
+      "objectId": "tr2",
+      "qualifier": "TR delivering CR"
+    }],
+    "id": "deliver_gateout_cr2",
+    "time": "2023-06-15T14:20:00.000Z"
+  }, {
+    "type": "Unload Goods",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR stripped of HU"
+    }, {
+      "objectId": "hu1",
+      "qualifier": "HU delivered"
+    }, {
+      "objectId": "hu2",
+      "qualifier": "HU delivered"
+    }, {
+      "objectId": "hu3",
+      "qualifier": "HU delivered"
+    }, {
+      "objectId": "hu4",
+      "qualifier": "HU delivered"
+    }, {
+      "objectId": "hu5",
+      "qualifier": "HU delivered"
+    }, {
+      "objectId": "hu6",
+      "qualifier": "HU delivered"
+    }],
+    "id": "strip_cr2",
+    "time": "2023-06-16T10:05:00.000Z"
+  }, {
+    "type": "Return Empty Container",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "cr2",
+      "qualifier": "CR returned empty"
+    }, {
+      "objectId": "tr2",
+      "qualifier": "TR returning CR"
+    }],
+    "id": "return_empty_cr2",
+    "time": "2023-06-16T15:50:00.000Z"
+  }, {
+    "type": "Close Customer Order",
+    "attributes": [],
+    "relationships": [{
+      "objectId": "co2",
+      "qualifier": "closed CO"
+    }, {
+      "objectId": "td1",
+      "qualifier": "completed TD"
+    }],
+    "id": "close_co2_td1",
+    "time": "2023-06-16T17:00:00.000Z"
+  }]
+}

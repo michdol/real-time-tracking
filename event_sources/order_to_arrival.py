@@ -44,7 +44,10 @@ EVENTS = [
             "receiptDeliveryType": ReceiptDeliveryType.CY,
             "shipmentLocations": [
                 {"locationType": ShipmentLocationType.POL, "UNLocationCode": ORIGIN},
-                {"locationType": ShipmentLocationType.POD, "UNLocationCode": DESTINATION},
+                {
+                    "locationType": ShipmentLocationType.POD,
+                    "UNLocationCode": DESTINATION,
+                },
                 {"locationType": ShipmentLocationType.ECP, "UNLocationCode": ORIGIN},
             ],
         },
@@ -63,7 +66,10 @@ EVENTS = [
                 "UNLocationCode": ORIGIN,
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -81,7 +87,10 @@ EVENTS = [
                 "UNLocationCode": ORIGIN,
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -93,7 +102,10 @@ EVENTS = [
             "shipmentEventTypeCode": ShipmentEventType.SUBM,
             "documentTypeCode": DocumentType.SHI,
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -113,7 +125,10 @@ EVENTS = [
                 "exportVoyageNumber": "612W",
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -132,7 +147,10 @@ EVENTS = [
                 "exportVoyageNumber": "612W",
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -145,7 +163,10 @@ EVENTS = [
             "documentTypeCode": DocumentType.TRD,
             "documentID": BILL_OF_LADING,
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -164,8 +185,14 @@ EVENTS = [
                 "importVoyageNumber": "612W",
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
-                {"documentReferenceType": DocumentType.TRD, "documentReferenceValue": BILL_OF_LADING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
+                {
+                    "documentReferenceType": DocumentType.TRD,
+                    "documentReferenceValue": BILL_OF_LADING,
+                },
             ],
         },
     ),
@@ -185,8 +212,14 @@ EVENTS = [
                 "importVoyageNumber": "612W",
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
-                {"documentReferenceType": DocumentType.TRD, "documentReferenceValue": BILL_OF_LADING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
+                {
+                    "documentReferenceType": DocumentType.TRD,
+                    "documentReferenceValue": BILL_OF_LADING,
+                },
             ],
         },
     ),
@@ -204,7 +237,10 @@ EVENTS = [
                 "UNLocationCode": DESTINATION,
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.TRD, "documentReferenceValue": BILL_OF_LADING},
+                {
+                    "documentReferenceType": DocumentType.TRD,
+                    "documentReferenceValue": BILL_OF_LADING,
+                },
             ],
         },
     ),
@@ -223,7 +259,10 @@ EVENTS = [
             },
             "shipmentLocationType": ShipmentLocationType.PDE,
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -241,7 +280,10 @@ EVENTS = [
                 "UNLocationCode": DESTINATION,
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -260,7 +302,10 @@ EVENTS = [
             },
             "shipmentLocationType": ShipmentLocationType.PDE,
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -278,7 +323,10 @@ EVENTS = [
                 "UNLocationCode": DESTINATION,
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -296,7 +344,10 @@ EVENTS = [
                 "UNLocationCode": DESTINATION,
             },
             "documentReferences": [
-                {"documentReferenceType": DocumentType.BKG, "documentReferenceValue": BOOKING},
+                {
+                    "documentReferenceType": DocumentType.BKG,
+                    "documentReferenceValue": BOOKING,
+                },
             ],
         },
     ),
@@ -309,7 +360,10 @@ EVENTS = [
             "documentTypeCode": DocumentType.BKG,
             "documentID": BOOKING,
             "documentReferences": [
-                {"documentReferenceType": DocumentType.TRD, "documentReferenceValue": BILL_OF_LADING},
+                {
+                    "documentReferenceType": DocumentType.TRD,
+                    "documentReferenceValue": BILL_OF_LADING,
+                },
             ],
         },
     ),
@@ -495,22 +549,134 @@ SEARATES_POINTS = [
     {"id": 2, "name": "Rotterdam", "country": "NL", "code5": "NLRTM"},
 ]
 SEARATES_EVENTS = [
-    {"date": 1775008800, "location": 1, "description": "Booking confirmed", "type": None, "vessel": None, "voyage": None},
-    {"date": 1775091600, "location": 1, "description": "Gate out empty", "type": 4, "vessel": None, "voyage": None},
-    {"date": 1775286000, "location": 1, "description": "Arrival in", "type": 4, "vessel": None, "voyage": None},
-    {"date": 1775354400, "location": 1, "description": "Shipping instruction submitted", "type": None, "vessel": None, "voyage": None},
-    {"date": 1775437200, "location": 1, "description": "Loaded", "type": 3, "vessel": "MADRID MAERSK", "voyage": "612W"},
-    {"date": 1775473200, "location": 1, "description": "Vessel departed", "type": 3, "vessel": "MADRID MAERSK", "voyage": "612W"},
-    {"date": 1775476800, "location": 1, "description": "Bill of lading issued", "type": None, "vessel": None, "voyage": None},
-    {"date": 1778238000, "location": 2, "description": "Vessel arrival", "type": 3, "vessel": "MADRID MAERSK", "voyage": "612W"},
-    {"date": 1778266800, "location": 2, "description": "Discharged", "type": 3, "vessel": "MADRID MAERSK", "voyage": "612W"},
-    {"date": 1778313600, "location": 2, "description": "Customs release", "type": 4, "vessel": None, "voyage": None},
-    {"date": 1778320800, "location": 2, "description": "Available for pickup", "type": 4, "vessel": None, "voyage": None},
-    {"date": 1778403600, "location": 2, "description": "Gate out", "type": 4, "vessel": None, "voyage": None},
-    {"date": 1778421600, "location": 2, "description": "Delivered", "type": 4, "vessel": None, "voyage": None},
-    {"date": 1778576400, "location": 2, "description": "Stripped", "type": 4, "vessel": None, "voyage": None},
-    {"date": 1778745600, "location": 2, "description": "Empty container return", "type": 4, "vessel": None, "voyage": None},
-    {"date": 1778774400, "location": 2, "description": "Booking completed", "type": None, "vessel": None, "voyage": None},
+    {
+        "date": 1775008800,
+        "location": 1,
+        "description": "Booking confirmed",
+        "type": None,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1775091600,
+        "location": 1,
+        "description": "Gate out empty",
+        "type": 4,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1775286000,
+        "location": 1,
+        "description": "Arrival in",
+        "type": 4,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1775354400,
+        "location": 1,
+        "description": "Shipping instruction submitted",
+        "type": None,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1775437200,
+        "location": 1,
+        "description": "Loaded",
+        "type": 3,
+        "vessel": "MADRID MAERSK",
+        "voyage": "612W",
+    },
+    {
+        "date": 1775473200,
+        "location": 1,
+        "description": "Vessel departed",
+        "type": 3,
+        "vessel": "MADRID MAERSK",
+        "voyage": "612W",
+    },
+    {
+        "date": 1775476800,
+        "location": 1,
+        "description": "Bill of lading issued",
+        "type": None,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1778238000,
+        "location": 2,
+        "description": "Vessel arrival",
+        "type": 3,
+        "vessel": "MADRID MAERSK",
+        "voyage": "612W",
+    },
+    {
+        "date": 1778266800,
+        "location": 2,
+        "description": "Discharged",
+        "type": 3,
+        "vessel": "MADRID MAERSK",
+        "voyage": "612W",
+    },
+    {
+        "date": 1778313600,
+        "location": 2,
+        "description": "Customs release",
+        "type": 4,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1778320800,
+        "location": 2,
+        "description": "Available for pickup",
+        "type": 4,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1778403600,
+        "location": 2,
+        "description": "Gate out",
+        "type": 4,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1778421600,
+        "location": 2,
+        "description": "Delivered",
+        "type": 4,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1778576400,
+        "location": 2,
+        "description": "Stripped",
+        "type": 4,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1778745600,
+        "location": 2,
+        "description": "Empty container return",
+        "type": 4,
+        "vessel": None,
+        "voyage": None,
+    },
+    {
+        "date": 1778774400,
+        "location": 2,
+        "description": "Booking completed",
+        "type": None,
+        "vessel": None,
+        "voyage": None,
+    },
 ]
 
 

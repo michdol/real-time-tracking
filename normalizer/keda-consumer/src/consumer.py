@@ -1,14 +1,24 @@
 from typing import Any
 
-from event_schemas import ShipmentEvent
-from event_schemas.event_pb2 import DocumentType, EventClassifier, ShipmentEventType
+# from event_schemas import ShipmentEvent
+from event_schemas.event_pb2 import EventEnvelope
+
+from src.normalizers.fluent_float.normalizer import normalize
+
+PROVIDER_FUNCTIONS = {
+    "FluentFloat": normalize,
+}
 
 
-def normalize(raw_event: dict[str, Any]):
-    event = ShipmentEvent(
-        event_classifier=EventClassifier.EVENT_CLASSIFIER_ACT,
-        shipment_event_type=ShipmentEventType.SHIPMENT_EVENT_TYPE_CONF,
-        document_type=DocumentType.DOCUMENT_TYPE_BKG,
-        document_id="MAEU00000001",
-    )
-    print(event)
+def consume(raw_event: dict[str, Any]):
+    provider = raw_event["provider"]
+    normalization_func = get_normalization_func(provider)
+    dcsa_event: EventEnvelope = normalization_func(raw_event)
+    print(dcsa_event)
+
+
+def get_normalization_func(provider: str):
+    try:
+        return PROVIDER_FUNCTIONS[provider]
+    except KeyError:
+        raise Exception("Consumer: I'm angry")

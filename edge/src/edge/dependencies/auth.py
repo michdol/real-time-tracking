@@ -1,12 +1,10 @@
-import hashlib
 import hmac
 
-from fastapi import Request, Depends, Security
+from fastapi import Depends, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from typing import Annotated
 
 from edge.exceptions import UnauthorizedException
-from edge.settings import settings
 from edge.auth.api_key import hash_secret
 from edge.database.db import Database
 from edge.dependencies.database import get_db

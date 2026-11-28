@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package dcsa.tracking.v1;
 
+import "google/protobuf/timestamp.proto";
+
+
 enum EventClassifier {
   EVENT_CLASSIFIER_UNSPECIFIED = 0;
   EVENT_CLASSIFIER_ACT = 1;
@@ -139,6 +142,38 @@ enum FacilityType {
   FACILITY_TYPE_ANCH = 11;
 }
 
+enum ReferenceType {
+  REFERENCE_TYPE_UNSPECIFIED = 0;
+  REFERENCE_TYPE_FF = 1;
+  REFERENCE_TYPE_SI = 2;
+  REFERENCE_TYPE_PO = 3;
+  REFERENCE_TYPE_CR = 4;
+  REFERENCE_TYPE_AAO = 5;
+  REFERENCE_TYPE_ECR = 6;
+  REFERENCE_TYPE_CSI = 7;
+  REFERENCE_TYPE_BPR = 8;
+  REFERENCE_TYPE_BID = 9;
+  REFERENCE_TYPE_EQ = 10;
+}
+
+message EventEnvelope {
+  string event_id = 1;
+  google.protobuf.Timestamp event_date_time = 2;
+  google.protobuf.Timestamp event_created_date_time = 3;
+  optional string retracted_event_id = 4;
+
+  oneof payload {
+    ShipmentEvent shipment_event = 5;
+    EquipmentEvent equipment_event = 6;
+    TransportEvent transport_event = 7;
+  }
+}
+
+message Reference {
+  ReferenceType reference_type = 1;
+  string reference_value = 2;
+}
+
 message ShipmentLocation {
   ShipmentLocationType location_type = 1;
   string un_location_code = 2;
@@ -158,6 +193,7 @@ message ShipmentEvent {
   optional ReceiptDeliveryType receipt_delivery = 6;
   repeated ShipmentLocation shipment_locations = 7;
   repeated DocumentReference document_references = 8;
+  repeated Reference references = 9;
 }
 
 message EquipmentEvent {
